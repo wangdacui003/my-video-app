@@ -9,3 +9,7 @@
 lib-*.aar
 /Release
 /docs
+web-admin/.env
+web-admin/storage/*.json
+web-admin/storage/**/*.json
+!web-admin/storage/.gitkeep

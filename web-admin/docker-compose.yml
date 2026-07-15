@@ -1,0 +1,11 @@
+services:
+  aimoyu-admin:
+    build: .
+    container_name: aimoyu-admin
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/app/storage

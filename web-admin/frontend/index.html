@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>爱摸鱼 APP 管理后台</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main id="app">
+    <section id="login" class="panel">
+      <h1>爱摸鱼 APP 管理后台</h1>
+      <p>品牌配置、接口管理与云端打包</p>
+      <label>账号<input id="username" autocomplete="username" value="admin"></label>
+      <label>密码<input id="password" type="password" autocomplete="current-password"></label>
+      <button id="loginBtn">登录</button>
+      <p id="loginMsg" class="message"></p>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <header>
+        <div>
+          <h1>爱摸鱼 APP 管理后台</h1>
+          <p>品牌配置、接口管理与云端打包</p>
+        </div>
+        <button id="logoutBtn">退出</button>
+      </header>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>品牌设置</h2>
+          <div id="brandForm" class="form-grid"></div>
+          <div class="actions">
+            <button id="saveBrandBtn">保存到后台</button>
+            <button id="syncBrandBtn">提交到 GitHub</button>
+          </div>
+          <p id="brandMsg" class="message"></p>
+        </section>
+
+        <section class="panel">
+          <h2>云端打包</h2>
+          <label>平台
+            <select id="platform">
+              <option value="mobile">手机版</option>
+              <option value="leanback">TV 版</option>
+              <option value="all">全部</option>
+            </select>
+          </label>
+          <label>CPU
+            <select id="architecture">
+              <option value="arm64">ARM64</option>
+              <option value="armv7">ARMv7</option>
+              <option value="all">全部</option>
+            </select>
+          </label>
+          <label>类型
+            <select id="buildType">
+              <option value="test">测试包</option>
+              <option value="release">正式包</option>
+            </select>
+          </label>
+          <button id="buildBtn">开始云端打包</button>
+          <p id="buildMsg" class="message"></p>
+        </section>
+
+        <section class="panel">
+          <h2>构建记录</h2>
+          <button id="refreshRunsBtn">刷新 GitHub 状态</button>
+          <div id="builds" class="list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>接口 JSON</h2>
+          <label>文件
+            <select id="jsonName">
+              <option value="config">config.json</option>
+              <option value="live">live.json</option>
+              <option value="wall">wall.json</option>
+              <option value="update">update.json</option>
+            </select>
+          </label>
+          <textarea id="jsonEditor" spellcheck="false"></textarea>
+          <div class="actions">
+            <button id="loadJsonBtn" class="secondary">读取</button>
+            <button id="saveJsonBtn">保存</button>
+          </div>
+          <p id="jsonMsg" class="message"></p>
+        </section>
+
+        <section class="panel">
+          <h2>系统状态</h2>
+          <pre id="health"></pre>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
