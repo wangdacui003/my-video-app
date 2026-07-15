@@ -12,6 +12,14 @@ const BRAND_PATH = path.join(STORAGE, "brand.json");
 const BUILDS_PATH = path.join(STORAGE, "builds.json");
 const JSON_DIR = path.join(STORAGE, "tv");
 const JSON_FILES = new Set(["config", "live", "wall", "update"]);
+const ASSET_DIR = path.join(STORAGE, "assets");
+const ASSETS = {
+  icon: { file: "icon.png", repo: "branding/icon.png", mime: "image/png", max: 3 * 1024 * 1024 },
+  logo: { file: "logo.png", repo: "branding/logo.png", mime: "image/png", max: 3 * 1024 * 1024 },
+  splash: { file: "splash.png", repo: "branding/splash.png", mime: "image/png", max: 6 * 1024 * 1024 },
+  wallpaper: { file: "wallpaper.jpg", repo: "branding/wallpaper.jpg", mime: "image/jpeg", max: 6 * 1024 * 1024 },
+  tv_banner: { file: "tv_banner.png", repo: "branding/tv_banner.png", mime: "image/png", max: 6 * 1024 * 1024 },
+};
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || hashPassword(process.env.ADMIN_PASSWORD || "");
@@ -45,6 +53,9 @@ async function routeApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/brand") return json(res, 200, readJson(BRAND_PATH, defaultBrand()));
   if (req.method === "PUT" && url.pathname === "/api/brand") return saveBrand(req, res);
   if (req.method === "POST" && url.pathname === "/api/github/sync-brand") return syncBrandToGitHub(res);
+  if (req.method === "POST" && url.pathname === "/api/github/sync-json") return syncJsonToGitHub(res);
+  if (req.method === "POST" && url.pathname === "/api/github/sync-assets") return syncAssetsToGitHub(res);
+  if (url.pathname.startsWith("/api/assets/")) return assetConfig(req, res, url);
   if (url.pathname.startsWith("/api/json/")) return jsonConfig(req, res, url);
   if (req.method === "POST" && url.pathname === "/api/builds") return triggerBuild(req, res);
   if (req.method === "GET" && url.pathname === "/api/builds") return json(res, 200, readJson(BUILDS_PATH, []));
@@ -94,6 +105,49 @@ async function syncBrandToGitHub(res) {
   return json(res, 200, result);
 }
 
+async function syncJsonToGitHub(res) {
+  const results = [];
+  for (const name of JSON_FILES) {
+    const file = path.join(JSON_DIR, `${name}.json`);
+    const value = readJson(file, defaultJsonConfig(name));
+    results.push(await putGitHubFile(`tv/${name}.json`, JSON.stringify(value, null, 2) + "\n", `Update ${name}.json`));
+  }
+  return json(res, 200, { ok: true, count: results.length });
+}
+
+async function assetConfig(req, res, url) {
+  const name = decodeURIComponent(url.pathname.replace("/api/assets/", ""));
+  const meta = ASSETS[name];
+  if (!meta) return json(res, 404, { error: "unknown_asset" });
+  const target = path.join(ASSET_DIR, meta.file);
+  if (req.method === "GET") {
+    return json(res, 200, {
+      name,
+      exists: fs.existsSync(target),
+      fileName: meta.file,
+      size: fs.existsSync(target) ? fs.statSync(target).size : 0,
+    });
+  }
+  if (req.method === "PUT") {
+    const body = await readBody(req);
+    const buffer = decodeUpload(body, meta);
+    fs.mkdirSync(ASSET_DIR, { recursive: true });
+    fs.writeFileSync(target, buffer);
+    return json(res, 200, { ok: true, name, fileName: meta.file, size: buffer.length });
+  }
+  return json(res, 405, { error: "method_not_allowed" });
+}
+
+async function syncAssetsToGitHub(res) {
+  const results = [];
+  for (const [name, meta] of Object.entries(ASSETS)) {
+    const file = path.join(ASSET_DIR, meta.file);
+    if (!fs.existsSync(file)) continue;
+    results.push(await putGitHubFile(meta.repo, fs.readFileSync(file), `Update Aimoyu ${name} asset`));
+  }
+  return json(res, 200, { ok: true, count: results.length });
+}
+
 async function triggerBuild(req, res) {
   const body = await readBody(req);
   const inputs = {
@@ -129,10 +183,11 @@ async function listWorkflowRuns(res) {
 
 async function putGitHubFile(repoPath, content, message) {
   const current = await github(`/contents/${repoPath}?ref=${encodeURIComponent(GITHUB_BRANCH)}`, { allow404: true });
+  const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
   const body = {
     message,
     branch: GITHUB_BRANCH,
-    content: Buffer.from(content, "utf8").toString("base64"),
+    content: buffer.toString("base64"),
   };
   if (current && current.sha) body.sha = current.sha;
   return github(`/contents/${repoPath}`, { method: "PUT", body: JSON.stringify(body) });
@@ -238,12 +293,26 @@ function writeJson(file, data) {
 function ensureStorage() {
   fs.mkdirSync(STORAGE, { recursive: true });
   fs.mkdirSync(JSON_DIR, { recursive: true });
+  fs.mkdirSync(ASSET_DIR, { recursive: true });
   if (!fs.existsSync(BRAND_PATH)) writeJson(BRAND_PATH, defaultBrand());
   if (!fs.existsSync(BUILDS_PATH)) writeJson(BUILDS_PATH, []);
   for (const name of JSON_FILES) {
     const file = path.join(JSON_DIR, `${name}.json`);
     if (!fs.existsSync(file)) writeJson(file, defaultJsonConfig(name));
   }
+}
+
+function decodeUpload(body, meta) {
+  const dataUrl = String(body.data || "");
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new HttpError(400, "upload must be a data URL");
+  const mime = match[1];
+  if (mime !== meta.mime) throw new HttpError(400, `file must be ${meta.mime}`);
+  const buffer = Buffer.from(match[2], "base64");
+  if (!buffer.length || buffer.length > meta.max) throw new HttpError(400, "file size is invalid");
+  if (meta.mime === "image/png" && !buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) throw new HttpError(400, "invalid PNG");
+  if (meta.mime === "image/jpeg" && !(buffer[0] === 0xff && buffer[1] === 0xd8)) throw new HttpError(400, "invalid JPEG");
+  return buffer;
 }
 
 function health() {

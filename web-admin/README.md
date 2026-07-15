@@ -2,6 +2,16 @@
 
 这个后台负责品牌配置、GitHub Actions 云端打包触发、构建记录查看。Android 编译仍然全部交给 GitHub Actions。
 
+已支持：
+
+- 管理员登录
+- 品牌配置编辑
+- 图片资产上传
+- `config.json / live.json / wall.json / update.json` 编辑
+- 提交品牌配置、图片和 `tv/*.json` 到 GitHub
+- 触发 GitHub Actions
+- 查看构建记录和 GitHub workflow 状态
+
 ## 部署
 
 1. 复制环境变量：

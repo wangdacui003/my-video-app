@@ -47,6 +47,9 @@ function bindEvents() {
   qs("#refreshRunsBtn").onclick = loadRuns;
   qs("#loadJsonBtn").onclick = loadJsonConfig;
   qs("#saveJsonBtn").onclick = saveJsonConfig;
+  qs("#syncJsonBtn").onclick = syncJsonConfig;
+  qs("#uploadAssetsBtn").onclick = uploadAssets;
+  qs("#syncAssetsBtn").onclick = syncAssets;
   qs("#jsonName").onchange = loadJsonConfig;
 }
 
@@ -200,6 +203,55 @@ async function saveJsonConfig() {
   } catch (error) {
     qs("#jsonMsg").textContent = `保存失败：${error.message}`;
   }
+}
+
+async function syncJsonConfig() {
+  try {
+    await api("/api/github/sync-json", { method: "POST" });
+    qs("#jsonMsg").textContent = "已提交 JSON 到 GitHub。";
+  } catch (error) {
+    qs("#jsonMsg").textContent = `提交失败：${error.message}`;
+  }
+}
+
+async function uploadAssets() {
+  const assets = [
+    ["icon", "#assetIcon"],
+    ["logo", "#assetLogo"],
+    ["splash", "#assetSplash"],
+    ["wallpaper", "#assetWallpaper"],
+    ["tv_banner", "#assetTvBanner"],
+  ];
+  let count = 0;
+  try {
+    for (const [name, selector] of assets) {
+      const file = qs(selector).files[0];
+      if (!file) continue;
+      await api(`/api/assets/${name}`, { method: "PUT", body: { data: await readFileDataUrl(file) } });
+      count += 1;
+    }
+    qs("#assetMsg").textContent = count ? `已上传 ${count} 个图片。` : "没有选择图片。";
+  } catch (error) {
+    qs("#assetMsg").textContent = `上传失败：${error.message}`;
+  }
+}
+
+async function syncAssets() {
+  try {
+    const result = await api("/api/github/sync-assets", { method: "POST" });
+    qs("#assetMsg").textContent = `已提交 ${result.count} 个图片到 GitHub。`;
+  } catch (error) {
+    qs("#assetMsg").textContent = `提交失败：${error.message}`;
+  }
+}
+
+function readFileDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 async function api(path, options = {}) {

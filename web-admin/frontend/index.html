@@ -83,8 +83,25 @@
           <div class="actions">
             <button id="loadJsonBtn" class="secondary">读取</button>
             <button id="saveJsonBtn">保存</button>
+            <button id="syncJsonBtn">提交 JSON 到 GitHub</button>
           </div>
           <p id="jsonMsg" class="message"></p>
+        </section>
+
+        <section class="panel">
+          <h2>图片资产</h2>
+          <div class="form-grid">
+            <label>APP 图标 PNG<input id="assetIcon" type="file" accept="image/png"></label>
+            <label>首页 Logo PNG<input id="assetLogo" type="file" accept="image/png"></label>
+            <label>启动图 PNG<input id="assetSplash" type="file" accept="image/png"></label>
+            <label>默认背景 JPG<input id="assetWallpaper" type="file" accept="image/jpeg"></label>
+            <label>TV Banner PNG<input id="assetTvBanner" type="file" accept="image/png"></label>
+          </div>
+          <div class="actions">
+            <button id="uploadAssetsBtn">上传到后台</button>
+            <button id="syncAssetsBtn">提交图片到 GitHub</button>
+          </div>
+          <p id="assetMsg" class="message"></p>
         </section>
 
         <section class="panel">
