@@ -13,11 +13,12 @@ android {
     compileSdk libs.versions.compileSdk.get().toInteger()
 
     defaultConfig {
-        applicationId "com.fongmi.android.tv"
+        applicationId "com.aimoyu.tv"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
-        versionCode 556
-        versionName "5.5.6"
+        versionCode (project.findProperty("aimoyuVersionCode") ?: "100").toString().toInteger()
+        versionName (project.findProperty("aimoyuVersionName") ?: "1.0.0").toString()
+        buildConfigField "String", "AIMOYU_VOD_URL", "\"${(project.findProperty("aimoyuVodUrl") ?: "").toString().replace("\\", "\\\\").replace("\"", "\\\"")}\""
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]

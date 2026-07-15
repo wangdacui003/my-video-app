@@ -19,6 +19,8 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 
+import com.fongmi.android.tv.BuildConfig;
+
 @Entity(indices = @Index(value = {"url", "type"}, unique = true))
 public class Config {
 
@@ -89,7 +91,9 @@ public class Config {
 
     public static Config vod() {
         Config item = AppDatabase.get().getConfigDao().findOne(0);
-        return item == null ? create(0) : item;
+        if (item != null) return item;
+        String url = BuildConfig.AIMOYU_VOD_URL;
+        return TextUtils.isEmpty(url) ? create(0) : create(0, url, "爱摸鱼");
     }
 
     public static Config live() {

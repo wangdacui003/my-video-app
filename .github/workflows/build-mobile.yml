@@ -1,7 +1,29 @@
-name: Build Mobile APK
+name: Build Aimoyu APK
 
 on:
   workflow_dispatch:
+    inputs:
+      vod_url:
+        description: "FongMi配置地址，必须是JSON配置，不是普通网页"
+        required: false
+        default: "https://361123.xyz/fongmi.json"
+      version_name:
+        description: "版本名"
+        required: true
+        default: "1.0.0"
+      version_code:
+        description: "版本号，只能填数字"
+        required: true
+        default: "100"
+      variant:
+        description: "打包类型"
+        required: true
+        default: "mobile"
+        type: choice
+        options:
+          - mobile
+          - leanback
+          - both
 
 jobs:
   build:
@@ -42,11 +64,24 @@ jobs:
             -dname "CN=Video App, OU=Mobile, O=Video, L=Taipei, ST=Taiwan, C=TW"
 
       - name: Build mobile ARM64 APK
-        run: ./gradlew assembleMobileArm64_v8aRelease --stacktrace
+        if: ${{ inputs.variant == 'mobile' || inputs.variant == 'both' }}
+        run: |
+          ./gradlew assembleMobileArm64_v8aRelease --stacktrace \
+            -PaimoyuVodUrl="${{ inputs.vod_url }}" \
+            -PaimoyuVersionName="${{ inputs.version_name }}" \
+            -PaimoyuVersionCode="${{ inputs.version_code }}"
+
+      - name: Build TV ARM64 APK
+        if: ${{ inputs.variant == 'leanback' || inputs.variant == 'both' }}
+        run: |
+          ./gradlew assembleLeanbackArm64_v8aRelease --stacktrace \
+            -PaimoyuVodUrl="${{ inputs.vod_url }}" \
+            -PaimoyuVersionName="${{ inputs.version_name }}" \
+            -PaimoyuVersionCode="${{ inputs.version_code }}"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-arm64-apk
-          path: app/build/outputs/apk/mobileArm64_v8a/release/*.apk
+          name: aimoyu-apk
+          path: app/build/outputs/apk/**/release/*.apk
           if-no-files-found: error
