@@ -326,6 +326,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.cast.setOnClickListener(view -> onCast());
         mBinding.control.info.setOnClickListener(view -> onInfo());
         mBinding.control.keep.setOnClickListener(view -> onKeep());
+        mBinding.control.fullscreen.setOnClickListener(view -> onFullscreen());
         mBinding.control.play.setOnClickListener(view -> checkPlay());
         mBinding.control.next.setOnClickListener(view -> checkNext());
         mBinding.control.prev.setOnClickListener(view -> checkPrev());
@@ -851,6 +852,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         checkKeepImg();
     }
 
+    private void onFullscreen() {
+        if (isFullscreen()) exitFullscreen();
+        else enterFullscreen();
+    }
+
     private void checkPlay() {
         setR1Callback();
         if (player().isPlaying()) onPaused();
@@ -1107,12 +1113,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.getRoot().setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
         mBinding.control.right.lock.setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
         mBinding.control.action.parse.setVisibility(isUseParse() ? View.VISIBLE : View.GONE);
+        mBinding.control.fullscreen.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.control.info.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.control.cast.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.control.center.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.bottom.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.back.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.top.setVisibility(isLock() ? View.GONE : View.VISIBLE);
+        checkFullscreenImg();
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
         setR1Callback();
     }
@@ -1183,6 +1191,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void checkKeepImg() {
         mBinding.control.keep.setImageResource(Keep.find(getHistoryKey()) == null ? R.drawable.ic_control_keep_off : R.drawable.ic_control_keep_on);
+    }
+
+    private void checkFullscreenImg() {
+        mBinding.control.fullscreen.setImageResource(isFullscreen() ? R.drawable.ic_control_fullscreen_exit : R.drawable.ic_control_fullscreen_enter);
     }
 
     private void checkLockImg() {
