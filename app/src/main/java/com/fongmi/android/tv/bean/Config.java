@@ -10,6 +10,7 @@ import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.BuildConfig;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.github.catvod.utils.Prefers;
 import com.google.gson.annotations.SerializedName;
@@ -19,7 +20,6 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 
-import com.fongmi.android.tv.BuildConfig;
 
 @Entity(indices = @Index(value = {"url", "type"}, unique = true))
 public class Config {

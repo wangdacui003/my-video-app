@@ -7,6 +7,11 @@ rootProject.file('local.properties').withInputStream {
     localProps.load(it)
 }
 
+def aimoyuVodUrl = (project.findProperty("aimoyuVodUrl") ?: "").toString()
+def aimoyuVersionName = (project.findProperty("aimoyuVersionName") ?: "1.0.0").toString()
+def aimoyuVersionCode = (project.findProperty("aimoyuVersionCode") ?: "100").toString().toInteger()
+def aimoyuEscapedVodUrl = aimoyuVodUrl.replace("\\", "\\\\").replace("\"", "\\\"")
+
 android {
     namespace = 'com.fongmi.android.tv'
 
@@ -16,9 +21,9 @@ android {
         applicationId "com.aimoyu.tv"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
-        versionCode (project.findProperty("aimoyuVersionCode") ?: "100").toString().toInteger()
-        versionName (project.findProperty("aimoyuVersionName") ?: "1.0.0").toString()
-        buildConfigField "String", "AIMOYU_VOD_URL", "\"${(project.findProperty("aimoyuVodUrl") ?: "").toString().replace("\\", "\\\\").replace("\"", "\\\"")}\""
+        versionCode aimoyuVersionCode
+        versionName aimoyuVersionName
+        buildConfigField "String", "AIMOYU_VOD_URL", "\"${aimoyuEscapedVodUrl}\""
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
