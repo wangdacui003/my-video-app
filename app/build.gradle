@@ -9,7 +9,9 @@ rootProject.file('local.properties').withInputStream {
 
 def aimoyuVodUrl = (project.findProperty("aimoyuVodUrl") ?: "").toString()
 def aimoyuVersionName = (project.findProperty("aimoyuVersionName") ?: "1.0.0").toString()
-def aimoyuVersionCode = (project.findProperty("aimoyuVersionCode") ?: "100").toString().toInteger()
+def aimoyuVersionCodeText = (project.findProperty("aimoyuVersionCode") ?: "100").toString()
+def aimoyuVersionCodeMatch = aimoyuVersionCodeText =~ /\d+/
+def aimoyuVersionCode = aimoyuVersionCodeMatch.find() ? aimoyuVersionCodeMatch.group().toInteger() : 100
 def aimoyuEscapedVodUrl = aimoyuVodUrl.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
