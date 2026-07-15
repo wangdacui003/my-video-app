@@ -365,7 +365,6 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         playerView.getSubtitleView().setStyle(getCaptionStyle());
         playerView.getSubtitleView().setApplyEmbeddedStyles(true);
         playerView.getSubtitleView().setApplyEmbeddedFontSizes(false);
-        if (PlayerSetting.getSubtitlePosition() != 0) playerView.getSubtitleView().setBottomPosition(PlayerSetting.getSubtitlePosition());
         if (PlayerSetting.getSubtitleTextSize() != 0) playerView.getSubtitleView().setFractionalTextSize(PlayerSetting.getSubtitleTextSize());
     }
 

@@ -74,33 +74,24 @@ public final class SubtitleDialog extends BaseBottomSheetDialog {
     }
 
     private void onUp(View view) {
-        subtitleView.addPosition(0.005f);
-        PlayerSetting.putSubtitlePosition(subtitleView.getPosition());
         applySubtitleStyle();
     }
 
     private void onDown(View view) {
-        subtitleView.subPosition(0.005f);
-        PlayerSetting.putSubtitlePosition(subtitleView.getPosition());
         applySubtitleStyle();
     }
 
     private void onLarge(View view) {
-        subtitleView.addTextSize(0.002f);
-        PlayerSetting.putSubtitleTextSize(subtitleView.getTextSize());
         applySubtitleStyle();
     }
 
     private void onSmall(View view) {
-        subtitleView.subTextSize(0.002f);
-        PlayerSetting.putSubtitleTextSize(subtitleView.getTextSize());
         applySubtitleStyle();
     }
 
     private void onReset(View view) {
         PlayerSetting.putSubtitleTextSize(0.0f);
         PlayerSetting.putSubtitlePosition(0.0f);
-        subtitleView.reset();
         applySubtitleStyle();
     }
 

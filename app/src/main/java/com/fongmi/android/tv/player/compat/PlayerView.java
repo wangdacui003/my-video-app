@@ -7,6 +7,8 @@ import android.util.AttributeSet;
 import androidx.annotation.Nullable;
 import androidx.media3.ui.danmaku.DanmakuConfig;
 
+import okhttp3.OkHttpClient;
+
 public class PlayerView extends androidx.media3.ui.PlayerView {
 
     private boolean debugViewVisible;
@@ -39,6 +41,9 @@ public class PlayerView extends androidx.media3.ui.PlayerView {
     }
 
     public void setDanmakuEnabled(boolean enabled) {
+    }
+
+    public void setDanmakuOkHttpClient(OkHttpClient client) {
     }
 
     public void setDanmakuConfig(DanmakuConfig config) {
