@@ -30,6 +30,10 @@ button.secondary {
   color: #edf2f7;
 }
 
+a {
+  color: #8dd9ff;
+}
+
 input,
 select,
 textarea {
@@ -126,6 +130,21 @@ p {
   border: 1px solid #26303b;
   border-radius: 6px;
   padding: 12px;
+}
+
+.download-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.download-links a {
+  background: #27313d;
+  border-radius: 6px;
+  color: #edf2f7;
+  padding: 8px 10px;
+  text-decoration: none;
 }
 
 pre {

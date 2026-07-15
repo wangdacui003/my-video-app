@@ -64,9 +64,15 @@
         </section>
 
         <section class="panel">
+          <h2>最新版下载</h2>
+          <button id="refreshRunsBtn">刷新状态</button>
+          <div id="downloads" class="list"></div>
+        </section>
+
+        <section class="panel">
           <h2>构建记录</h2>
-          <button id="refreshRunsBtn">刷新 GitHub 状态</button>
           <div id="builds" class="list"></div>
+          <div id="runs" class="list"></div>
         </section>
 
         <section class="panel">
@@ -89,7 +95,7 @@
         </section>
 
         <section class="panel">
-          <h2>图片资产</h2>
+          <h2>图片资源</h2>
           <div class="form-grid">
             <label>APP 图标 PNG<input id="assetIcon" type="file" accept="image/png"></label>
             <label>首页 Logo PNG<input id="assetLogo" type="file" accept="image/png"></label>

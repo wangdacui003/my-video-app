@@ -31,7 +31,7 @@ ensureStorage();
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    if (url.pathname.startsWith("/api/")) return routeApi(req, res, url);
+    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/tv/")) return routeApi(req, res, url);
     return serveStatic(req, res, url);
   } catch (error) {
     console.error(error);
@@ -44,6 +44,7 @@ server.listen(PORT, () => {
 });
 
 async function routeApi(req, res, url) {
+  if (req.method === "GET" && url.pathname.startsWith("/tv/")) return publicTv(req, res, url);
   if (req.method === "POST" && url.pathname === "/api/login") return login(req, res);
   if (req.method === "POST" && url.pathname === "/api/logout") return logout(res);
   if (req.method === "GET" && url.pathname === "/api/session") return json(res, 200, { authenticated: isAuthenticated(req) });
@@ -60,6 +61,7 @@ async function routeApi(req, res, url) {
   if (req.method === "POST" && url.pathname === "/api/builds") return triggerBuild(req, res);
   if (req.method === "GET" && url.pathname === "/api/builds") return json(res, 200, readJson(BUILDS_PATH, []));
   if (req.method === "GET" && url.pathname === "/api/github/runs") return listWorkflowRuns(res);
+  if (req.method === "GET" && url.pathname === "/api/github/releases") return listReleases(res);
   return json(res, 404, { error: "not_found" });
 }
 
@@ -181,6 +183,72 @@ async function listWorkflowRuns(res) {
   return json(res, 200, result);
 }
 
+async function listReleases(res) {
+  const releases = await github("/releases?per_page=20");
+  const items = releases.filter((release) => String(release.tag_name || "").startsWith("aimoyu-v")).map(releaseToManifest);
+  return json(res, 200, { releases: items });
+}
+
+async function publicTv(req, res, url) {
+  const matchJson = url.pathname.match(/^\/tv\/(config|live|wall|update)\.json$/);
+  if (matchJson) {
+    const name = matchJson[1];
+    if (name === "update") return json(res, 200, await latestUpdateManifest());
+    return json(res, 200, readJson(path.join(JSON_DIR, `${name}.json`), defaultJsonConfig(name)));
+  }
+  const matchAsset = url.pathname.match(/^\/tv\/assets\/([^/]+)$/);
+  if (matchAsset) {
+    const fileName = path.basename(matchAsset[1]);
+    const file = path.join(ASSET_DIR, fileName);
+    if (!fs.existsSync(file) || !file.startsWith(ASSET_DIR)) return text(res, 404, "Not found");
+    return streamFile(res, file);
+  }
+  return text(res, 404, "Not found");
+}
+
+async function latestUpdateManifest() {
+  try {
+    const releases = await github("/releases?per_page=20");
+    const release = releases.find((item) => String(item.tag_name || "").startsWith("aimoyu-v"));
+    if (release) return releaseToManifest(release);
+  } catch (error) {
+    console.error(error);
+  }
+  return readJson(path.join(JSON_DIR, "update.json"), defaultJsonConfig("update"));
+}
+
+function releaseToManifest(release) {
+  const tag = String(release.tag_name || "");
+  const versionCode = Number(tag.match(/-(\d+)$/)?.[1] || 0);
+  const versionName = tag.replace(/^aimoyu-v/, "").replace(/-\d+$/, "") || release.name || "";
+  const manifest = {
+    code: versionCode,
+    name: versionName,
+    desc: release.body || "爱摸鱼影视 APP 新版本。",
+    versionCode,
+    versionName,
+    force: false,
+    description: release.body || "爱摸鱼影视 APP 新版本。",
+    publishedAt: release.published_at || release.created_at || "",
+    htmlUrl: release.html_url,
+    mobile: {},
+    tv: {},
+  };
+  for (const asset of release.assets || []) {
+    if (!String(asset.name || "").endsWith(".apk")) continue;
+    const target = asset.name.includes("-tv-") ? "tv" : "mobile";
+    const arch = asset.name.includes("-arm64-") ? "arm64" : "armv7";
+    manifest[target][arch] = {
+      name: asset.name,
+      url: asset.browser_download_url,
+      size: asset.size,
+      downloadCount: asset.download_count,
+    };
+    if (!manifest.url && target === "mobile" && arch === "arm64") manifest.url = asset.browser_download_url;
+  }
+  return manifest;
+}
+
 async function putGitHubFile(repoPath, content, message) {
   const current = await github(`/contents/${repoPath}?ref=${encodeURIComponent(GITHUB_BRANCH)}`, { allow404: true });
   const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
@@ -236,6 +304,13 @@ function serveStatic(req, res, url) {
   fs.createReadStream(filePath).pipe(res);
 }
 
+function streamFile(res, file) {
+  const ext = path.extname(file).toLowerCase();
+  const type = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".json": "application/json; charset=utf-8" }[ext] || "application/octet-stream";
+  res.writeHead(200, { "Content-Type": type, "Cache-Control": "public, max-age=300" });
+  fs.createReadStream(file).pipe(res);
+}
+
 function isAuthenticated(req) {
   const cookie = req.headers.cookie || "";
   const token = cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith("aimoyu_session="))?.split("=")[1];
@@ -256,6 +331,7 @@ function verifySession(token) {
   if (!payload || !sig) return null;
   const raw = Buffer.from(payload, "base64url").toString();
   const expected = crypto.createHmac("sha256", SESSION_SECRET).update(raw).digest("base64url");
+  if (Buffer.byteLength(sig) !== Buffer.byteLength(expected)) return null;
   return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) ? raw : null;
 }
 
@@ -346,7 +422,7 @@ function defaultBrand() {
     buildTv: true,
     buildArm64: true,
     buildArmV7: false,
-    enableUpdateCheck: false,
+    enableUpdateCheck: true,
     enableLive: true,
     enableDLNA: true,
     enableSpider: true,

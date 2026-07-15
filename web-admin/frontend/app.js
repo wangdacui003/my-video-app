@@ -76,19 +76,15 @@ async function logout() {
 async function showDashboard() {
   qs("#login").classList.add("hidden");
   qs("#dashboard").classList.remove("hidden");
-  await Promise.all([loadBrand(), loadBuilds(), loadHealth(), loadJsonConfig()]);
+  await Promise.all([loadBrand(), loadBuilds(), loadHealth(), loadJsonConfig(), loadRuns()]);
 }
 
 async function loadBrand() {
   currentBrand = await api("/api/brand");
   const form = qs("#brandForm");
   form.innerHTML = "";
-  for (const [key, label] of fields) {
-    form.appendChild(inputField(key, label, currentBrand[key] ?? ""));
-  }
-  for (const [key, label] of boolFields) {
-    form.appendChild(checkField(key, label, Boolean(currentBrand[key])));
-  }
+  for (const [key, label] of fields) form.appendChild(inputField(key, label, currentBrand[key] ?? ""));
+  for (const [key, label] of boolFields) form.appendChild(checkField(key, label, Boolean(currentBrand[key])));
 }
 
 function inputField(key, label, value) {
@@ -120,27 +116,19 @@ async function saveBrand() {
     else if (key === "versionCode") brand[key] = Number(element.value);
     else brand[key] = element.value;
   });
-  try {
-    const result = await api("/api/brand", { method: "PUT", body: brand });
-    currentBrand = result.brand;
-    qs("#brandMsg").textContent = "已保存到后台。";
-  } catch (error) {
-    qs("#brandMsg").textContent = `保存失败：${error.message}`;
-  }
+  const result = await api("/api/brand", { method: "PUT", body: brand });
+  currentBrand = result.brand;
+  qs("#brandMsg").textContent = "已保存到后台。";
 }
 
 async function syncBrand() {
   try {
-    await syncSaveFirst();
+    await saveBrand();
     await api("/api/github/sync-brand", { method: "POST" });
     qs("#brandMsg").textContent = "已提交 brand.json 到 GitHub。";
   } catch (error) {
     qs("#brandMsg").textContent = `提交失败：${error.message}`;
   }
-}
-
-async function syncSaveFirst() {
-  await saveBrand();
 }
 
 async function triggerBuild() {
@@ -153,6 +141,7 @@ async function triggerBuild() {
     await api("/api/builds", { method: "POST", body });
     qs("#buildMsg").textContent = "已触发 GitHub Actions。";
     await loadBuilds();
+    setTimeout(loadRuns, 3000);
   } catch (error) {
     qs("#buildMsg").textContent = `触发失败：${error.message}`;
   }
@@ -163,24 +152,47 @@ async function loadBuilds() {
   qs("#builds").innerHTML = builds.map((item) => `
     <div class="item">
       <strong>${item.inputs.platform} / ${item.inputs.architecture} / ${item.inputs.build_type}</strong>
-      <div>${item.status} · ${item.createdAt}</div>
+      <div>${item.status} · ${formatDate(item.createdAt)}</div>
     </div>
   `).join("") || "暂无记录";
 }
 
 async function loadRuns() {
   try {
-    const data = await api("/api/github/runs");
-    qs("#builds").innerHTML = data.workflow_runs.map((run) => `
-      <div class="item">
-        <strong>${run.display_title || run.name}</strong>
-        <div>${run.status} / ${run.conclusion || "-"} · ${run.created_at}</div>
-        <a href="${run.html_url}" target="_blank" rel="noreferrer">打开 GitHub</a>
-      </div>
-    `).join("");
+    const [runs, releases] = await Promise.all([
+      api("/api/github/runs"),
+      api("/api/github/releases"),
+    ]);
+    renderRuns(runs.workflow_runs || []);
+    renderReleases(releases.releases || []);
   } catch (error) {
-    qs("#builds").innerHTML = `<div class="item">读取失败：${error.message}</div>`;
+    qs("#runs").innerHTML = `<div class="item">读取失败：${error.message}</div>`;
   }
+}
+
+function renderRuns(runs) {
+  qs("#runs").innerHTML = runs.map((run) => `
+    <div class="item">
+      <strong>${run.display_title || run.name}</strong>
+      <div>${run.status} / ${run.conclusion || "-"} · ${formatDate(run.created_at)}</div>
+      <a href="${run.html_url}" target="_blank" rel="noreferrer">打开 GitHub</a>
+    </div>
+  `).join("") || "暂无 GitHub 记录";
+}
+
+function renderReleases(releases) {
+  qs("#downloads").innerHTML = releases.map((release) => {
+    const assets = [...Object.values(release.mobile || {}), ...Object.values(release.tv || {})];
+    return `
+      <div class="item">
+        <strong>版本 ${release.versionName} (${release.versionCode || "-"})</strong>
+        <div>${formatDate(release.publishedAt)}</div>
+        <div class="download-links">
+          ${assets.map((asset) => `<a href="${asset.url}" target="_blank" rel="noreferrer">${asset.name}</a>`).join("")}
+        </div>
+      </div>
+    `;
+  }).join("") || "暂无可下载 APK";
 }
 
 async function loadHealth() {
@@ -263,6 +275,11 @@ async function api(path, options = {}) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "request_failed");
   return data;
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("zh-CN", { hour12: false });
 }
 
 function qs(selector) {

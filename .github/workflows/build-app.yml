@@ -42,6 +42,10 @@ on:
         required: false
         default: ""
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -135,6 +139,23 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
+          VERSION_NAME="${{ inputs.version_name }}"
+          VERSION_CODE="${{ inputs.version_code }}"
+          if [ -z "$VERSION_NAME" ] || [ -z "$VERSION_CODE" ]; then
+            eval "$(python - <<'PY'
+import json
+from pathlib import Path
+brand = json.loads(Path("branding/brand.json").read_text(encoding="utf-8"))
+print("BRAND_VERSION_NAME=" + str(brand.get("versionName", "1.0.0")))
+print("BRAND_VERSION_CODE=" + str(brand.get("versionCode", 1)))
+PY
+)"
+            VERSION_NAME="${VERSION_NAME:-$BRAND_VERSION_NAME}"
+            VERSION_CODE="${VERSION_CODE:-$BRAND_VERSION_CODE}"
+          fi
+          echo "AIMOYU_VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "AIMOYU_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "AIMOYU_RELEASE_TAG=aimoyu-v${VERSION_NAME}-${VERSION_CODE}" >> "$GITHUB_ENV"
           find app/build/outputs/apk -path "*/release/*.apk" -type f | while read -r apk; do
             name="$(basename "$apk")"
             if [ "${{ inputs.build_type }}" = "test" ] || [ "${SIGNING_MODE}" = "test" ]; then
@@ -151,9 +172,85 @@ jobs:
             echo "  \"architecture\": \"${{ inputs.architecture }}\","
             echo "  \"buildType\": \"${{ inputs.build_type }}\","
             echo "  \"signingMode\": \"${SIGNING_MODE}\","
+            echo "  \"versionName\": \"${VERSION_NAME}\","
+            echo "  \"versionCode\": ${VERSION_CODE},"
             echo "  \"createdAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\""
             echo "}"
           } > build-info.json
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          NOTES="dist/release-notes.md"
+          {
+            echo "AiMoYu APK"
+            echo
+            echo "- Version: ${AIMOYU_VERSION_NAME} (${AIMOYU_VERSION_CODE})"
+            echo "- Platform: ${{ inputs.platform }}"
+            echo "- Architecture: ${{ inputs.architecture }}"
+            echo "- Build type: ${{ inputs.build_type }}"
+            echo "- Signing mode: ${SIGNING_MODE}"
+          } > "$NOTES"
+          if gh release view "$AIMOYU_RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$AIMOYU_RELEASE_TAG" --title "AiMoYu ${AIMOYU_VERSION_NAME} (${AIMOYU_VERSION_CODE})" --notes-file "$NOTES"
+          else
+            gh release create "$AIMOYU_RELEASE_TAG" --title "AiMoYu ${AIMOYU_VERSION_NAME} (${AIMOYU_VERSION_CODE})" --notes-file "$NOTES"
+          fi
+          gh release upload "$AIMOYU_RELEASE_TAG" dist/*.apk dist/checksums.sha256 dist/build-info.json --clobber
+
+      - name: Update online manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p tv
+          python - <<'PY'
+import json
+import os
+from pathlib import Path
+
+repo = os.environ["GITHUB_REPOSITORY"]
+tag = os.environ["AIMOYU_RELEASE_TAG"]
+version_name = os.environ["AIMOYU_VERSION_NAME"]
+version_code = int(os.environ["AIMOYU_VERSION_CODE"])
+created_at = Path("dist/build-info.json").read_text(encoding="utf-8")
+created_at = json.loads(created_at).get("createdAt", "")
+
+manifest = {
+    "code": version_code,
+    "name": version_name,
+    "desc": "爱摸鱼影视 APP 新版本。",
+    "versionCode": version_code,
+    "versionName": version_name,
+    "force": False,
+    "description": "爱摸鱼影视 APP 新版本。",
+    "publishedAt": created_at,
+    "mobile": {},
+    "tv": {},
+}
+
+for apk in sorted(Path("dist").glob("*.apk")):
+    name = apk.name
+    url = f"https://github.com/{repo}/releases/download/{tag}/{name}"
+    target = "tv" if "-tv-" in name else "mobile"
+    arch = "arm64" if "-arm64-" in name else "armv7"
+    manifest[target][arch] = {
+        "name": name,
+        "url": url,
+        "size": apk.stat().st_size,
+    }
+    if target == "mobile" and arch == "arm64":
+        manifest["url"] = url
+
+Path("tv/update.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tv/update.json
+          git commit -m "Update Aimoyu app update manifest" || exit 0
+          git push origin HEAD:${{ github.ref_name }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

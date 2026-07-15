@@ -22,11 +22,12 @@ import java.io.File;
 
 public class Updater implements Download.Callback, UpdateListener {
 
-    private final Download download;
+    private Download download;
     private UpdateDialog dialog;
+    private String apkUrl;
+    private boolean forced;
 
     private Updater() {
-        this.download = Download.create(getApk(), getFile());
     }
 
     public static Updater create() {
@@ -46,20 +47,25 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     public Updater force() {
+        forced = true;
         Setting.putUpdate(false);
         return this;
     }
 
     public void start(FragmentActivity activity) {
-        Setting.putUpdate(false);
+        if (!forced && !BuildConfig.AIMOYU_ENABLE_UPDATE_CHECK) return;
+        if (!forced && !Setting.getUpdate()) return;
+        if (activity == null || activity.isFinishing()) return;
+        Task.execute(() -> doInBackground(activity));
     }
 
     private void doInBackground(FragmentActivity activity) {
         try {
             JSONObject object = new JSONObject(OkHttp.string(getJson()));
-            String name = object.optString("name");
-            String desc = object.optString("desc");
-            int code = object.optInt("code");
+            String name = object.optString("name", object.optString("versionName"));
+            String desc = object.optString("desc", object.optString("description"));
+            int code = object.optInt("code", object.optInt("versionCode"));
+            apkUrl = getApk(object);
             if (code <= BuildConfig.VERSION_CODE) return;
             App.post(() -> show(activity, name, desc));
         } catch (Exception e) {
@@ -75,13 +81,14 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void onConfirm(View view) {
         view.setEnabled(false);
+        download = Download.create(apkUrl != null && apkUrl.length() > 0 ? apkUrl : getApk(), getFile());
         download.start(this);
     }
 
     @Override
     public void onCancel(View view) {
         Setting.putUpdate(false);
-        download.cancel();
+        if (download != null) download.cancel();
         dismiss();
     }
 
@@ -107,5 +114,19 @@ public class Updater implements Download.Callback, UpdateListener {
     public void success(File file) {
         FileUtil.openFile(file);
         dismiss();
+    }
+
+    private String getApk(JSONObject object) {
+        String direct = object.optString("url");
+        if (direct.length() > 0) return direct;
+        JSONObject platform = object.optJSONObject(BuildConfig.FLAVOR_mode.equals("leanback") ? "tv" : "mobile");
+        if (platform == null) platform = object.optJSONObject(BuildConfig.FLAVOR_mode);
+        JSONObject abi = platform != null ? platform.optJSONObject(getAbi()) : null;
+        if (abi != null && abi.optString("url").length() > 0) return abi.optString("url");
+        return getApk();
+    }
+
+    private String getAbi() {
+        return BuildConfig.FLAVOR_abi.equals("arm64_v8a") ? "arm64" : "armv7";
     }
 }

@@ -19,7 +19,7 @@
   "buildTv": true,
   "buildArm64": true,
   "buildArmV7": false,
-  "enableUpdateCheck": false,
+  "enableUpdateCheck": true,
   "enableLive": true,
   "enableDLNA": true,
   "enableSpider": true

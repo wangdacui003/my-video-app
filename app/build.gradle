@@ -12,6 +12,9 @@ def brand = brandFile.exists() ? new groovy.json.JsonSlurper().parse(brandFile) 
 def brandValue = { key, fallback -> brand.containsKey(key) && brand[key] != null ? brand[key].toString() : fallback }
 
 def aimoyuVodUrl = (project.findProperty("aimoyuVodUrl") ?: brandValue("vodConfig", "https://361123.xyz/api/provide/config")).toString()
+def aimoyuUpdateUrl = (project.findProperty("aimoyuUpdateUrl") ?: brandValue("updateUrl", "https://361123.xyz/tv/update.json")).toString()
+def aimoyuApkDownloadBaseUrl = (project.findProperty("aimoyuApkDownloadBaseUrl") ?: brandValue("apkDownloadBaseUrl", "https://361123.xyz/tv/apk/")).toString()
+def aimoyuEnableUpdateCheck = brand.containsKey("enableUpdateCheck") ? brand["enableUpdateCheck"].toString().toBoolean() : true
 def aimoyuVersionName = (project.findProperty("aimoyuVersionName") ?: brandValue("versionName", "1.0.0")).toString()
 def aimoyuVersionCodeText = (project.findProperty("aimoyuVersionCode") ?: brandValue("versionCode", "1")).toString()
 def aimoyuVersionCodeMatch = aimoyuVersionCodeText =~ /\d+/
@@ -19,6 +22,8 @@ def aimoyuVersionCode = aimoyuVersionCodeMatch.find() ? aimoyuVersionCodeMatch.g
 def aimoyuMobileApplicationId = (project.findProperty("aimoyuMobileApplicationId") ?: brandValue("mobileApplicationId", "xyz.a361123.aimoyu")).toString()
 def aimoyuTvApplicationId = (project.findProperty("aimoyuTvApplicationId") ?: brandValue("tvApplicationId", "xyz.a361123.aimoyu.tv")).toString()
 def aimoyuEscapedVodUrl = aimoyuVodUrl.replace("\\", "\\\\").replace("\"", "\\\"")
+def aimoyuEscapedUpdateUrl = aimoyuUpdateUrl.replace("\\", "\\\\").replace("\"", "\\\"")
+def aimoyuEscapedApkDownloadBaseUrl = aimoyuApkDownloadBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
     namespace = 'com.fongmi.android.tv'
@@ -32,6 +37,9 @@ android {
         versionCode aimoyuVersionCode
         versionName aimoyuVersionName
         buildConfigField "String", "AIMOYU_VOD_URL", "\"${aimoyuEscapedVodUrl}\""
+        buildConfigField "String", "AIMOYU_UPDATE_URL", "\"${aimoyuEscapedUpdateUrl}\""
+        buildConfigField "String", "AIMOYU_APK_DOWNLOAD_BASE_URL", "\"${aimoyuEscapedApkDownloadBaseUrl}\""
+        buildConfigField "boolean", "AIMOYU_ENABLE_UPDATE_CHECK", "${aimoyuEnableUpdateCheck}"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
