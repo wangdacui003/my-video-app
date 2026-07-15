@@ -59,7 +59,7 @@
         android:singleLine="true"
         android:textColor="@color/white"
         android:textSize="24sp"
-        tools:text="慶餘年第二季" />
+        tools:text="Preview" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/remark"
@@ -72,7 +72,7 @@
         android:singleLine="true"
         android:textColor="@color/white"
         android:textSize="16sp"
-        tools:text="更新到第二季" />
+        tools:text="Preview" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/row1"
@@ -92,7 +92,7 @@
             android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="16sp"
-            tools:text="站源：泥�? />
+            tools:text="Preview" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/year"
@@ -102,7 +102,7 @@
             android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="16sp"
-            tools:text="年份�?022" />
+            tools:text="Preview" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/area"
@@ -112,7 +112,7 @@
             android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="16sp"
-            tools:text="地區：台�? />
+            tools:text="Preview" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/type"
@@ -121,7 +121,7 @@
             android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="16sp"
-            tools:text="類型：科�? />
+            tools:text="Preview" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -137,7 +137,7 @@
         android:singleLine="true"
         android:textColor="@color/white"
         android:textSize="16sp"
-        tools:text="導演：FongMi" />
+        tools:text="Preview" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/actor"
@@ -152,7 +152,7 @@
         android:nextFocusDown="@id/content"
         android:textColor="@color/white"
         android:textSize="16sp"
-        tools:text="演員：FongMi" />
+        tools:text="Preview" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/row2"
