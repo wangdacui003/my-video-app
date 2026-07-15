@@ -5,8 +5,6 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.media3.common.C;
-import androidx.media3.common.MediaChapter;
-import androidx.media3.common.MediaEdition;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackException;
@@ -35,6 +33,7 @@ import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.google.common.net.HttpHeaders;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -89,12 +88,12 @@ public class PlayerManager implements ParseCallback {
         return player.getCurrentTracks();
     }
 
-    public List<MediaChapter> getCurrentMediaChapters() {
-        return player.getCurrentMediaChapters();
+    public List<androidx.media3.common.MediaChapter> getCurrentMediaChapters() {
+        return Collections.emptyList();
     }
 
-    public List<MediaEdition> getCurrentMediaEditions() {
-        return player.getCurrentMediaEditions();
+    public List<androidx.media3.common.MediaEdition> getCurrentMediaEditions() {
+        return Collections.emptyList();
     }
 
     public MediaItem getCurrentMediaItem() {
@@ -254,12 +253,10 @@ public class PlayerManager implements ParseCallback {
         startCurrent();
     }
 
-    public void selectChapter(MediaChapter chapter) {
-        player.selectChapter(chapter);
+    public void selectChapter(androidx.media3.common.MediaChapter chapter) {
     }
 
-    public void selectEdition(MediaEdition edition) {
-        player.selectEdition(edition);
+    public void selectEdition(androidx.media3.common.MediaEdition edition) {
     }
 
     public void setDanmakuConfig(DanmakuConfig config) {
@@ -345,19 +342,17 @@ public class PlayerManager implements ParseCallback {
     }
 
     public long getTextOffsetMs() {
-        return player.isCommandAvailable(Player.COMMAND_GET_TEXT_OFFSET) ? player.getTextOffsetMs() : 0;
+        return 0;
     }
 
     public void setTextOffsetMs(long offsetMs) {
-        if (player.isCommandAvailable(Player.COMMAND_SET_TEXT_OFFSET)) player.setTextOffsetMs(offsetMs);
     }
 
     public long getAudioOffsetMs() {
-        return player.isCommandAvailable(Player.COMMAND_GET_AUDIO_OFFSET) ? player.getAudioOffsetMs() : 0;
+        return 0;
     }
 
     public void setAudioOffsetMs(long offsetMs) {
-        if (player.isCommandAvailable(Player.COMMAND_SET_AUDIO_OFFSET)) player.setAudioOffsetMs(offsetMs);
     }
 
     public void reset() {
@@ -545,16 +540,6 @@ public class PlayerManager implements ParseCallback {
             setTrack(Track.find(getKey()));
             callback.onTracksChanged();
             initTrack = true;
-        }
-
-        @Override
-        public void onMediaChaptersChanged(@NonNull List<MediaChapter> chapters) {
-            callback.onMediaOptionsChanged();
-        }
-
-        @Override
-        public void onMediaEditionsChanged(@NonNull List<MediaEdition> editions) {
-            callback.onMediaOptionsChanged();
         }
 
         @Override

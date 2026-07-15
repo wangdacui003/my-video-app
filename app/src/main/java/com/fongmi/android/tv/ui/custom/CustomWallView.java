@@ -17,7 +17,7 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
-import androidx.media3.ui.PlayerView;
+import com.fongmi.android.tv.player.compat.PlayerView;
 import androidx.palette.graphics.Palette;
 
 import com.fongmi.android.tv.R;

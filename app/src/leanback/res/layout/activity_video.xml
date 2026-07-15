@@ -20,7 +20,7 @@
         android:nextFocusUp="@id/video"
         android:nextFocusDown="@id/flag">
 
-        <androidx.media3.ui.PlayerView
+        <com.fongmi.android.tv.player.compat.PlayerView
             android:id="@+id/player"
             style="@style/Player.Vod"
             android:layout_width="match_parent"
@@ -92,7 +92,7 @@
             android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="16sp"
-            tools:text="站源：泥巴" />
+            tools:text="站源：泥�? />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/year"
@@ -102,7 +102,7 @@
             android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="16sp"
-            tools:text="年份：2022" />
+            tools:text="年份�?022" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/area"
@@ -112,7 +112,7 @@
             android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="16sp"
-            tools:text="地區：台灣" />
+            tools:text="地區：台�? />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/type"
@@ -121,7 +121,7 @@
             android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="16sp"
-            tools:text="類型：科幻" />
+            tools:text="類型：科�? />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

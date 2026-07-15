@@ -15,7 +15,7 @@ import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.Player;
 import androidx.media3.common.VideoSize;
 import androidx.media3.ui.PlayerSeekView;
-import androidx.media3.ui.PlayerView;
+import com.fongmi.android.tv.player.compat.PlayerView;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.App;

@@ -9,7 +9,7 @@
     android:focusable="true"
     android:keepScreenOn="true">
 
-    <androidx.media3.ui.PlayerView
+    <com.fongmi.android.tv.player.compat.PlayerView
         android:id="@+id/player"
         style="@style/Player.Vod"
         android:layout_width="match_parent"
