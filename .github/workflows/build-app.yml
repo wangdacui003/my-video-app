@@ -1,0 +1,163 @@
+name: Build Aimoyu APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Build target"
+        required: true
+        default: "mobile"
+        type: choice
+        options:
+          - mobile
+          - leanback
+          - all
+      architecture:
+        description: "CPU architecture"
+        required: true
+        default: "arm64"
+        type: choice
+        options:
+          - arm64
+          - armv7
+          - all
+      build_type:
+        description: "Build type"
+        required: true
+        default: "test"
+        type: choice
+        options:
+          - test
+          - release
+      version_name:
+        description: "Optional version name override, for example 1.0.1"
+        required: false
+        default: ""
+      version_code:
+        description: "Optional positive integer version code override"
+        required: false
+        default: ""
+      vod_url:
+        description: "Optional FongMi/TVBox config URL override"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install branding dependencies
+        run: python -m pip install --upgrade pillow
+
+      - name: Grant Gradle permission
+        run: chmod +x gradlew
+
+      - name: Prepare signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.build_type }}" = "release" ] && [ -n "${KEYSTORE_BASE64}" ] && [ -n "${KEYSTORE_PASSWORD}" ] && [ -n "${KEY_ALIAS}" ]; then
+            echo "${KEYSTORE_BASE64}" | base64 -d > release.keystore
+            {
+              echo "storeFile=${GITHUB_WORKSPACE}/release.keystore"
+              echo "keyAlias=${KEY_ALIAS}"
+              echo "storePassword=${KEYSTORE_PASSWORD}"
+              echo "keyPassword=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+            } > local.properties
+            echo "SIGNING_MODE=release" >> "$GITHUB_ENV"
+          else
+            keytool -genkeypair \
+              -keystore release.keystore \
+              -storepass 12345678 \
+              -keypass 12345678 \
+              -alias release \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=AiMoYu Test, OU=Mobile, O=AiMoYu, L=Hong Kong, ST=Hong Kong, C=HK"
+            {
+              echo "storeFile=${GITHUB_WORKSPACE}/release.keystore"
+              echo "keyAlias=release"
+              echo "storePassword=12345678"
+              echo "keyPassword=12345678"
+            } > local.properties
+            echo "SIGNING_MODE=test" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build APKs
+        run: |
+          set -euo pipefail
+          declare -a MODES
+          declare -a ABIS
+          case "${{ inputs.platform }}" in
+            mobile) MODES=(mobile) ;;
+            leanback) MODES=(leanback) ;;
+            all) MODES=(mobile leanback) ;;
+          esac
+          case "${{ inputs.architecture }}" in
+            arm64) ABIS=(Arm64_v8a) ;;
+            armv7) ABIS=(Armeabi_v7a) ;;
+            all) ABIS=(Arm64_v8a Armeabi_v7a) ;;
+          esac
+          declare -a PROPS
+          if [ -n "${{ inputs.version_name }}" ]; then PROPS+=("-PaimoyuVersionName=${{ inputs.version_name }}"); fi
+          if [ -n "${{ inputs.version_code }}" ]; then PROPS+=("-PaimoyuVersionCode=${{ inputs.version_code }}"); fi
+          if [ -n "${{ inputs.vod_url }}" ]; then PROPS+=("-PaimoyuVodUrl=${{ inputs.vod_url }}"); fi
+          for mode in "${MODES[@]}"; do
+            python scripts/apply_brand.py --mode "$mode"
+            if [ "$mode" = "mobile" ]; then mode_task="Mobile"; else mode_task="Leanback"; fi
+            for abi in "${ABIS[@]}"; do
+              ./gradlew "assemble${mode_task}${abi}Release" --stacktrace "${PROPS[@]}"
+            done
+          done
+
+      - name: Collect artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          find app/build/outputs/apk -path "*/release/*.apk" -type f | while read -r apk; do
+            name="$(basename "$apk")"
+            if [ "${{ inputs.build_type }}" = "test" ] || [ "${SIGNING_MODE}" = "test" ]; then
+              name="${name%.apk}-test.apk"
+            fi
+            cp "$apk" "dist/$name"
+          done
+          cd dist
+          sha256sum *.apk > checksums.sha256
+          {
+            echo "{"
+            echo "  \"brand\": \"AiMoYu\","
+            echo "  \"platform\": \"${{ inputs.platform }}\","
+            echo "  \"architecture\": \"${{ inputs.architecture }}\","
+            echo "  \"buildType\": \"${{ inputs.build_type }}\","
+            echo "  \"signingMode\": \"${SIGNING_MODE}\","
+            echo "  \"createdAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\""
+            echo "}"
+          } > build-info.json
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aimoyu-apk
+          path: dist/*
+          if-no-files-found: error

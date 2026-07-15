@@ -7,11 +7,17 @@ rootProject.file('local.properties').withInputStream {
     localProps.load(it)
 }
 
-def aimoyuVodUrl = (project.findProperty("aimoyuVodUrl") ?: "").toString()
-def aimoyuVersionName = (project.findProperty("aimoyuVersionName") ?: "1.0.0").toString()
-def aimoyuVersionCodeText = (project.findProperty("aimoyuVersionCode") ?: "100").toString()
+def brandFile = rootProject.file('branding/brand.json')
+def brand = brandFile.exists() ? new groovy.json.JsonSlurper().parse(brandFile) : [:]
+def brandValue = { key, fallback -> brand.containsKey(key) && brand[key] != null ? brand[key].toString() : fallback }
+
+def aimoyuVodUrl = (project.findProperty("aimoyuVodUrl") ?: brandValue("vodConfig", "https://361123.xyz/api/provide/config")).toString()
+def aimoyuVersionName = (project.findProperty("aimoyuVersionName") ?: brandValue("versionName", "1.0.0")).toString()
+def aimoyuVersionCodeText = (project.findProperty("aimoyuVersionCode") ?: brandValue("versionCode", "1")).toString()
 def aimoyuVersionCodeMatch = aimoyuVersionCodeText =~ /\d+/
-def aimoyuVersionCode = aimoyuVersionCodeMatch.find() ? aimoyuVersionCodeMatch.group().toInteger() : 100
+def aimoyuVersionCode = aimoyuVersionCodeMatch.find() ? aimoyuVersionCodeMatch.group().toInteger() : 1
+def aimoyuMobileApplicationId = (project.findProperty("aimoyuMobileApplicationId") ?: brandValue("mobileApplicationId", "xyz.a361123.aimoyu")).toString()
+def aimoyuTvApplicationId = (project.findProperty("aimoyuTvApplicationId") ?: brandValue("tvApplicationId", "xyz.a361123.aimoyu.tv")).toString()
 def aimoyuEscapedVodUrl = aimoyuVodUrl.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
@@ -20,7 +26,7 @@ android {
     compileSdk libs.versions.compileSdk.get().toInteger()
 
     defaultConfig {
-        applicationId "com.aimoyu.tv"
+        applicationId aimoyuMobileApplicationId
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
         versionCode aimoyuVersionCode
@@ -38,9 +44,11 @@ android {
     productFlavors {
         leanback {
             dimension "mode"
+            applicationId aimoyuTvApplicationId
         }
         mobile {
             dimension "mode"
+            applicationId aimoyuMobileApplicationId
         }
         arm64_v8a {
             dimension "abi"
@@ -61,7 +69,7 @@ android {
         release {
             storeFile file(localProps['storeFile'])
             keyAlias localProps['keyAlias']
-            keyPassword localProps['storePassword']
+            keyPassword localProps['keyPassword'] ?: localProps['storePassword']
             storePassword localProps['storePassword']
         }
     }
@@ -101,8 +109,10 @@ androidComponents {
         def flavors = variant.productFlavors.collectEntries { [(it.first): it.second] }
         def mode = flavors['mode'] ?: 'mode'
         def abi = flavors['abi'] ?: 'abi'
+        def appMode = mode == 'leanback' ? 'tv' : mode
+        def appAbi = abi == 'arm64_v8a' ? 'arm64' : (abi == 'armeabi_v7a' ? 'armv7' : abi)
         variant.outputs.each { output ->
-            output.outputFileName.set("${mode}-${abi}.apk")
+            output.outputFileName.set("aimoyu-${appMode}-${appAbi}-v${aimoyuVersionName}.apk")
         }
     }
 }
