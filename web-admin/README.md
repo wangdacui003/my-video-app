@@ -17,10 +17,10 @@
 1. 复制环境变量：
 
 ```bash
-cp .env.example .env
+cp .env.example admin.env
 ```
 
-2. 填写 `.env`：
+2. 填写 `admin.env`：
 
 ```env
 GITHUB_TOKEN=你的 Fine-grained token
@@ -59,4 +59,4 @@ Fine-grained token 建议只给 `wangdacui003/my-video-app` 仓库，并开启�
 - Contents: Read and write
 - Actions: Read and write
 
-Token 只放后端 `.env`，不要写入前端或仓库。
+Token 只放后端 `admin.env`，不要写入前端或仓库。

@@ -1,3 +1,4 @@
 .env
+admin.env
 storage/*
 !storage/.gitkeep
