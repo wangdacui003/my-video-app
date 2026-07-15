@@ -31,7 +31,7 @@ ensureStorage();
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/tv/")) return routeApi(req, res, url);
+    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/tv/")) return await routeApi(req, res, url);
     return serveStatic(req, res, url);
   } catch (error) {
     console.error(error);
