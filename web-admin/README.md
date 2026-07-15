@@ -35,7 +35,7 @@ ADMIN_PASSWORD_HASH=密码哈希
 3. 生成密码哈希：
 
 ```bash
-node -e "const crypto=require('crypto');const p=process.argv[1];const s=crypto.randomBytes(16).toString('hex');const h=crypto.scryptSync(p,s,64).toString('hex');console.log('scrypt$'+s+'$'+h)" '你的密码'
+node -e "const crypto=require('crypto');const p=process.argv[1];const s=crypto.randomBytes(16).toString('hex');const h=crypto.scryptSync(p,s,64).toString('hex');console.log('scrypt:'+s+':'+h)" '你的密码'
 ```
 
 4. 启动：

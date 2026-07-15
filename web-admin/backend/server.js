@@ -263,11 +263,12 @@ function hashPassword(password) {
   if (!password) return "";
   const salt = crypto.randomBytes(16).toString("hex");
   const hash = crypto.scryptSync(password, salt, 64).toString("hex");
-  return `scrypt$${salt}$${hash}`;
+  return `scrypt:${salt}:${hash}`;
 }
 
 function verifyPassword(password, stored) {
-  const [, salt, hash] = String(stored || "").split("$");
+  const parts = String(stored || "").includes("$") ? String(stored || "").split("$") : String(stored || "").split(":");
+  const [, salt, hash] = parts;
   if (!salt || !hash) return false;
   const actual = crypto.scryptSync(password, salt, 64).toString("hex");
   return crypto.timingSafeEqual(Buffer.from(actual), Buffer.from(hash));
