@@ -135,6 +135,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
+          VERSION_NAME="${{ inputs.version_name }}"
+          VERSION_CODE="${{ inputs.version_code }}"
+          if [ -z "$VERSION_NAME" ]; then
+            VERSION_NAME="$(python -c "import json; print(json.load(open('branding/brand.json', encoding='utf-8')).get('versionName', '1.0.0'))")"
+          fi
+          if [ -z "$VERSION_CODE" ]; then
+            VERSION_CODE="$(python -c "import json; print(json.load(open('branding/brand.json', encoding='utf-8')).get('versionCode', 1))")"
+          fi
           find app/build/outputs/apk -path "*/release/*.apk" -type f | while read -r apk; do
             name="$(basename "$apk")"
             if [ "${{ inputs.build_type }}" = "test" ] || [ "${SIGNING_MODE}" = "test" ]; then
@@ -151,6 +159,8 @@ jobs:
             echo "  \"architecture\": \"${{ inputs.architecture }}\","
             echo "  \"buildType\": \"${{ inputs.build_type }}\","
             echo "  \"signingMode\": \"${SIGNING_MODE}\","
+            echo "  \"versionName\": \"${VERSION_NAME}\","
+            echo "  \"versionCode\": ${VERSION_CODE},"
             echo "  \"createdAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\""
             echo "}"
           } > build-info.json
