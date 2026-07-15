@@ -1,12 +1,19 @@
 {
-  "code": 1,
-  "name": "1.0.0",
-  "desc": "爱摸鱼影视 APP 首个版本。",
-  "versionCode": 1,
-  "versionName": "1.0.0",
+  "code": 3,
+  "name": "1.0.2",
+  "desc": "AiMoYu app update.",
+  "versionCode": 3,
+  "versionName": "1.0.2",
   "force": false,
-  "description": "爱摸鱼影视 APP 首个版本。",
-  "publishedAt": "",
-  "mobile": {},
-  "tv": {}
+  "description": "AiMoYu app update.",
+  "publishedAt": "2026-07-15T14:01:08Z",
+  "mobile": {
+    "arm64": {
+      "name": "aimoyu-mobile-arm64-v1.0.2-test.apk",
+      "url": "https://github.com/wangdacui003/my-video-app/releases/download/aimoyu-v1.0.2-3/aimoyu-mobile-arm64-v1.0.2-test.apk",
+      "size": 48579240
+    }
+  },
+  "tv": {},
+  "url": "https://github.com/wangdacui003/my-video-app/releases/download/aimoyu-v1.0.2-3/aimoyu-mobile-arm64-v1.0.2-test.apk"
 }
